@@ -1,0 +1,1 @@
+from .atribuicao_service import process_assignments
