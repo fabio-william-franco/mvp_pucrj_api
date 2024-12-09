@@ -51,26 +51,6 @@ def add_especialidade(form: EspecialidadeSchema):
         logger.error(f"Erro: {e}")
         return {"message": error_msg}, 400
     
-@app.put('/especialidade/edit', tags=[especialidade_tag],
-         responses={"200": EspecialidadeViewSchema, "404": ErrorSchema, "400": ErrorSchema})
-def edit_especialidade(form: EspecialidadeSchema):
-    """Edita o nome de uma especialidade existente."""
-    session = Session()
-    try:
-        especialidade = session.query(Especialidade).filter_by(id=form.id).first()
-        if not especialidade:
-            return {"message": "Especialidade não encontrada."}, 404
-        
-        especialidade.nome = form.nome  
-        session.commit()
-        return {"id": especialidade.id, "nome": especialidade.nome}, 200
-    except Exception as e:
-        session.rollback()
-        error_msg = "Erro ao editar especialidade."
-        logger.error(f"Erro: {e}")
-        return {"message": error_msg}, 400
-
-
 
 @app.get('/especialidades', tags=[especialidade_tag],
          responses={"200": ListagemEspecialidadesSchema, "404": ErrorSchema})
@@ -184,52 +164,6 @@ def del_trabalhador(query: TrabalhadorBuscaSchema):
     else:
         error_msg = "Trabalhador não encontrado."
         return {"message": error_msg}, 404
-    
-
-@app.put('/trabalhador/edit', tags=[trabalhador_tag],
-         responses={"200": TrabalhadorViewSchema, "404": ErrorSchema, "400": ErrorSchema})
-def edit_trabalhador(form: TrabalhadorSchema):
-    """Edita o nome e as especialidades de um trabalhador existente."""
-    session = Session()
-    try:
-        
-        trabalhador = session.query(Trabalhador).filter_by(id=form.id).first()
-        if not trabalhador:
-            return {"message": "Trabalhador não encontrado."}, 404
-
-       
-        trabalhador.nome = form.nome
-
-        
-        especialidades_validas = session.query(Especialidade.id).filter(Especialidade.id.in_(form.especialidades_ids)).all()
-        especialidades_validas_ids = [e.id for e in especialidades_validas]
-
-        
-        ids_invalidos = set(form.especialidades_ids) - set(especialidades_validas_ids)
-        if ids_invalidos:
-            return {"message": f"IDs de especialidades inválidos: {list(ids_invalidos)}"}, 400
-
-       
-        trabalhador.especialidades.clear()
-        for especialidade_id in especialidades_validas_ids:
-            trabalhador_especialidade = TrabalhadorEspecialidade(
-                trabalhador_id=trabalhador.id,
-                especialidade_id=especialidade_id
-            )
-            session.add(trabalhador_especialidade)
-
-        session.commit()
-        return {
-            "id": trabalhador.id,
-            "nome": trabalhador.nome,
-            "especialidades": [{"id": e.especialidade.id, "nome": e.especialidade.nome} for e in trabalhador.especialidades]
-        }, 200
-    except Exception as e:
-        session.rollback()
-        error_msg = "Erro ao editar trabalhador."
-        logger.error(f"Erro: {e}")
-        return {"message": error_msg}, 400
-
 
 
 @app.post('/tarefa', tags=[tarefa_tag],
